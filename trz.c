@@ -71,7 +71,7 @@ void uzupelnij(int n, int tab[][3], motel *motele, bool strona){ // strona: 0 - 
 
 int najblizsza_trojka(int n, int (*lewo)[3], int (*prawo)[3], motel *motele){
     int wynik = INT_MAX;
-    bool ok = 0; // sprawdzam czy w ogole istnieja trzy rozne motele
+    bool ok = 0; // sprawdzam czy w ogole istnieja trzy motele nalezace do roznych sieci
     // mozna udowodnic ze jesli aktualny motel jest motelem B, to optymalny dla niego motel A bedzie 
     // ktoryms z trzech najblizszych po lewo nalezacych do roznych sieci, a motel C z tych po prawo
     // zatem dla kazdego motelu B sprawdzamy wszystkich kandydatow i przy aktualizacji wyniku upewniamy 
@@ -96,7 +96,7 @@ int najblizsza_trojka(int n, int (*lewo)[3], int (*prawo)[3], motel *motele){
 
 int najdalsza_trojka(int n, int (*lewo)[3], int (*prawo)[3], motel *motele){
     int wynik = INT_MIN;
-    bool ok = 0; // sprawdzam czy w ogole istnieja trzy rozne motele
+    bool ok = 0; // sprawdzam czy w ogole istnieja trzy motele nalezace do roznych sieci
     // mozna udowodnic ze jesli aktualny motel jest motelem B, to optymalny dla niego motel A bedzie 
     // ktoryms z trzech najdalszych po lewo nalezacych do roznych sieci, a motel C z tych po prawo
     // zauwazmy ze sa to po prostu motele z tablic lewo lub prawo dla poczatku lub konca ciagu moteli
