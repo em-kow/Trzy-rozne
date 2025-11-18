@@ -1,14 +1,17 @@
+// Mikołaj Kowalski
+// code review: Grzegorz Kaczmarek
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
 #include <stdbool.h>
 
 
-typedef struct{
+typedef struct{ // motele reprezentuja jako ich siec i polozenie na osi
     int siec, pozycja;
 } motel;
 
-bool trzy_rozne(int a, int b, int c){
+bool trzy_rozne(int a, int b, int c){ // funkcja sprawdza czy trzy liczby sa parami rozne
     return (a != b && b != c && c != a);
 }
 
@@ -22,46 +25,46 @@ int min(int a, int b){
     else return b;
 }
 
-void uzupelnij_lewo(int n, int lewo[][3], motel *motele){
-    for(int k = 0; k < 3; k ++){
-        for(int i = 0; i < n; i ++) lewo[i][k] = -1;
-    }
-    lewo[0][0] = 0;
-    for(int i = 1; i < n; i ++){
-        lewo[i][0] = i;
-        if(motele[lewo[i - 1][0]].siec == motele[i].siec){
-            lewo[i][1] = lewo[i - 1][1];
-            lewo[i][2] = lewo[i - 1][2];
-        }
-        else if(lewo[i - 1][1] != -1 && motele[lewo[i - 1][1]].siec == motele[i].siec){
-            lewo[i][1] = lewo[i - 1][0];
-            lewo[i][2] = lewo[i - 1][2];
-        }
-        else{
-            lewo[i][1] = lewo[i - 1][0];
-            lewo[i][2] = lewo[i - 1][1];
-        }
-    }
-}
+// do rozwiazania potrzebuje dla kazdego motelu znac trzy kolejne motele nalezace do roznych sieci znajdujace sie na lewo i 
+// prawo od danego motelu. Trzymam to w tablicy lewo[i][3] i prawo[i][3]. Zakladam ze najblizszy motel zarowno z lewej jak
+// i prawej strony dla kazdego motelu to on sam, zatem zachodzi lewo[i][0] = prawo[i][0] = i. Jesli nie istnieja trzy mote-
+// le roznych sieci z danej strony to zaznaczam w tablicy -1
+// tablice lewo[i] mozna latwo wyliczyc dynamicznie na podstawie tablicy lewo[i - 1], poniewaz wiemy ze tablica lewo[i - 1]
+// z definicji wskazuje na trzy rozne motele, to wystarczy rozpatrzyc przypadki czy ktorys z tych trzech moteli nalezy do 
+// tej samej sieci co motel i
+// tablice prawo[i] uzupelniamy analogicznie
+// ze wzgledu na duze podobienstwo w uzupelnaniu tablic lewo i prawo mozna to zrobic przy pomocy jednej funkcji, wystarczy 
+// wiedziec czy idziemy od poczatku czy od konca oraz czy wyliczamy wartosci na podstawie tablicy wczensiej czy z pozniej
 
-void uzupelnij_prawo(int n, int prawo[][3], motel *motele){
+void uzupelnij(int n, int tab[][3], motel *motele, bool strona){ // strona: 0 - licze lewo, 1 - licze prawo
     for(int k = 0; k < 3; k ++){
-        for(int i = 0; i < n; i ++) prawo[i][k] = -1;
+        for(int i = 0; i < n; i ++) tab[i][k] = -1;
     }
-    prawo[n - 1][0] = n - 1;
-    for(int i = n - 2; i >= 0; i --){
-        prawo[i][0] = i;
-        if(motele[prawo[i + 1][0]].siec == motele[i].siec){
-            prawo[i][1] = prawo[i + 1][1];
-            prawo[i][2] = prawo[i + 1][2];
+    int start, roznica;
+    if(strona == 0){ // gdy licze lewo to zaczynam od indeksu 0 i odwoluje sie do tablicy od indeksu wczesniejszego
+        start = 0;
+        roznica = 1;
+    }
+    else{ // gdy licze prawo to zaczynam od indeksu n - 1 i odwoluje sie do tablicy od indeksu pozniejszego
+        start = n - 1;
+        roznica = -1;
+    }
+    tab[start][0] = start;
+    for(int i = start + roznica; (i >= 0 && i < n); i += roznica){
+        tab[i][0] = i; // niezmiennik
+        // rozpatruje przypadki czy ktorys motel z tablicy do ktorej sie aktualnie odwoluje (czyli i-1 lub i+1 
+        // w zaleznosci od strony) nalezy do tej samej sieci co motel i
+        if(motele[tab[i - roznica][0]].siec == motele[i].siec){
+            tab[i][1] = tab[i - roznica][1];
+            tab[i][2] = tab[i - roznica][2];
         }
-        else if(prawo[i + 1][1] != -1 && motele[prawo[i + 1][1]].siec == motele[i].siec){
-            prawo[i][1] = prawo[i + 1][0];
-            prawo[i][2] = prawo[i + 1][2];
+        else if(tab[i - roznica][1] != -1 && motele[tab[i - roznica][1]].siec == motele[i].siec){
+            tab[i][1] = tab[i - roznica][0];
+            tab[i][2] = tab[i - roznica][2];
         }
         else{
-            prawo[i][1] = prawo[i + 1][0];
-            prawo[i][2] = prawo[i + 1][1];
+            tab[i][1] = tab[i - roznica][0];
+            tab[i][2] = tab[i - roznica][1];
         }
     }
 }
@@ -69,6 +72,10 @@ void uzupelnij_prawo(int n, int prawo[][3], motel *motele){
 int najblizsza_trojka(int n, int (*lewo)[3], int (*prawo)[3], motel *motele){
     int wynik = INT_MAX;
     bool ok = 0;
+    // mozna udowodnic ze jesli aktualny motel jest motelem B, to optymalny dla niego motel A bedzie 
+    // ktoryms z trzech najblizszych po lewo nalezacych do roznych sieci, a motel C z tych po prawo
+    // zatem dla kazdego motelu B sprawdzamy wszystkich kandydatow i przy aktualizacji wyniku upewniamy 
+    // sie czy na pewno motele naleza do trzech roznych sieci
     for(int act_b = 1; act_b < n - 1; act_b ++){
         for(int i = 0; i < 3; i ++){
             for(int j = 0; j < 3; j ++){
@@ -90,6 +97,11 @@ int najblizsza_trojka(int n, int (*lewo)[3], int (*prawo)[3], motel *motele){
 int najdalsza_trojka(int n, int (*lewo)[3], int (*prawo)[3], motel *motele){
     int wynik = INT_MIN;
     bool ok = 0;
+    // mozna udowodnic ze jesli aktualny motel jest motelem B, to optymalny dla niego motel A bedzie 
+    // ktoryms z trzech najdalszych po lewo nalezacych do roznych sieci, a motel C z tych po prawo
+    // zauwazmy ze sa to po prostu motele z tablic lewo lub prawo dla poczatku lub konca ciagu moteli
+    // zatem dla kazdego motelu B sprawdzamy wszystkich kandydatow i przy aktualizacji wyniku upewniamy 
+    // sie czy na pewno motele naleza do trzech roznych sieci i czy sa ulozone w kolejnosci A B C w ciagu
     for(int act_b = 0; act_b < n; act_b ++){
         for(int i = 0; i < 3; i ++){
             for(int j = 0; j < 3; j ++){
@@ -117,8 +129,8 @@ int main(){
     }
     int (*lewo)[3] = calloc((size_t)n, sizeof *lewo);
     int (*prawo)[3] = calloc((size_t)n, sizeof *prawo);
-    uzupelnij_lewo(n, lewo, motele);
-    uzupelnij_prawo(n, prawo, motele);
+    uzupelnij(n, lewo, motele, 0);
+    uzupelnij(n, prawo, motele, 1);
     printf("%d %d\n", najblizsza_trojka(n, lewo, prawo, motele), najdalsza_trojka(n, lewo, prawo, motele));
     return 0;
 }
